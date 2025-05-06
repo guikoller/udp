@@ -1,12 +1,14 @@
 import os
 import socket
+import time
 from packet import Packet
 
 class UDPServer:
-    def __init__(self, port, max_payload=1465):
+    def __init__(self, port, max_payload=1465, delay=0.00):
         self.server_ip = "0.0.0.0"
         self.port = port
         self.max_payload = max_payload
+        self.delay = delay
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind((self.server_ip, self.port))
         print(f"Servidor UDP iniciado em {self.server_ip}:{self.port}")
@@ -28,6 +30,7 @@ class UDPServer:
                 self.socket.sendto(data_packet.to_bytes(), client_address)
                 print(f"[ENVIO] Pacote {seq} enviado para {client_address} ({len(chunk)} bytes)")
                 seq += 1
+                time.sleep(self.delay)
 
     def retransmit_missing(self, client_address, file_path, missing_seqs):
         if not os.path.exists(file_path):
@@ -42,6 +45,7 @@ class UDPServer:
                     data_packet = Packet(seq, 1, chunk)
                     self.socket.sendto(data_packet.to_bytes(), client_address)
                     print(f"[RETRANSMISSÃO] Pacote {seq} retransmitido para {client_address} ({len(chunk)} bytes)")
+                    time.sleep(self.delay)
 
     def handle_request(self, client_address, request_packet):
         try:

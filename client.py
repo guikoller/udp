@@ -1,10 +1,12 @@
 import socket
 from packet import Packet
+import time
 
 class Client:
-    def __init__(self, server_ip, server_port):
+    def __init__(self, server_ip, server_port, delay=0.00):
         self.server_ip = server_ip
         self.server_port = server_port
+        self.delay = delay
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.settimeout(10)
         print(f"Cliente configurado para se conectar ao servidor {server_ip}:{server_port}")
@@ -13,6 +15,7 @@ class Client:
         request_packet = Packet(seq=0, pkt_type=0, data=f"GET {filename}".encode())
         self.sock.sendto(request_packet.to_bytes(), (self.server_ip, self.server_port))
         print(f"[ENVIO] Requisição enviada: GET {filename}")
+        time.sleep(self.delay)
 
     def receive_file(self, filename, simulate_loss=False):
         segments = {}
@@ -35,6 +38,8 @@ class Client:
                     segments[packet.seq] = packet.data
                     print(f"[RECEBIDO] Pacote {packet.seq} armazenado ({len(packet.data)} bytes)")
                     expected_seq = max(expected_seq, packet.seq + 1)
+                
+                time.sleep(self.delay)
 
             except socket.timeout:
                 print("[ERRO] Timeout esperando por pacotes.")
@@ -57,6 +62,7 @@ class Client:
             request_packet = Packet(seq=0, pkt_type=0, data=missing_request.encode())
             self.sock.sendto(request_packet.to_bytes(), (self.server_ip, self.server_port))
             print(f"[ENVIO] Solicitação de retransmissão enviada para pacotes: {chunk}")
+            time.sleep(self.delay)
 
     def save_file(self, segments, filename):
         with open(f"received_{filename}", 'wb') as f:
@@ -78,5 +84,5 @@ if __name__ == "__main__":
     filename = input("Digite o nome do arquivo a ser solicitado: ").strip()
     simulate_loss = input("Simular perda de pacotes? (s/n): ").lower() == 's'
 
-    client = Client(server_ip, server_port)
+    client = Client(server_ip, server_port, delay=0.1)
     client.run(filename, simulate_loss)
