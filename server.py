@@ -4,7 +4,7 @@ import time
 from packet import Packet
 
 class UDPServer:
-    def __init__(self, port, max_payload=1465, delay=0.00):
+    def __init__(self, port, max_payload=1465, delay=0.01):
         self.server_ip = "0.0.0.0"
         self.port = port
         self.max_payload = max_payload
@@ -31,6 +31,10 @@ class UDPServer:
                 print(f"[ENVIO] Pacote {seq} enviado para {client_address} ({len(chunk)} bytes)")
                 seq += 1
                 time.sleep(self.delay)
+        
+        end_packet = Packet(seq=0, pkt_type=3, data=b"")
+        self.socket.sendto(end_packet.to_bytes(), client_address)
+        print(f"[ENVIO] Pacote de término enviado para {client_address}")
 
     def retransmit_missing(self, client_address, file_path, missing_seqs):
         if not os.path.exists(file_path):
@@ -67,7 +71,7 @@ class UDPServer:
 
     def start(self):
         print("Servidor aguardando conexões...")
-        connected_clients = set()  # Para rastrear clientes conectados
+        connected_clients = set()
         while True:
             try:
                 packet_bytes, client_address = self.socket.recvfrom(1500)
